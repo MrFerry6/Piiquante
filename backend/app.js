@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const app = express();
 const bodyParser = require('body-parser');
 const userRoutes = require('./routes/user');
+const sauceRoutes = require('./routes/sauce');
 
 mongoose.connect('mongodb+srv://TestUser:1234@cluster0.affna.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')//TODO-- encode password.
   .then(() => {
@@ -20,8 +21,10 @@ app.use((req, res, next) => {
   next();
 });
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
 
-app.use('/api/auth', userRoutes)
+app.use('/api/auth', userRoutes);
+app.use('/api/sauces', sauceRoutes);
 
 
 module.exports = app;
