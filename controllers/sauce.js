@@ -57,9 +57,7 @@ exports.newSauce = (req, res, next) => {
 
 exports.deleteSauce = (req, res, next) => {
     Sauce.findOne({_id: req.params.id})
-      .then( (sauce) => {
-
-        
+      .then( (sauce) => {     
         
         const filename = sauce.imageUrl.split('/images/')[1];
         
@@ -78,13 +76,21 @@ exports.deleteSauce = (req, res, next) => {
             }
           );
         });
-      })};
+      })
+    };
 
 exports.modifySauce = (req, res, next) => {
   const url = req.protocol + '://' + req.get('host');
+  
   if(typeof req.file !== 'undefined'){
-    console.log(req.file.filename);
+    Sauce.findOne({_id: req.params.id})
+    .then( (sauce) => {
+      const filename = sauce.imageUrl.split('/images/')[1];
+        
+      fileSystem.unlink('images/' + filename, () => {
+        
     const bodysauce = JSON.parse(req.body.sauce);
+    
     Sauce.updateOne( {_id: req.params.id},{
       userId: bodysauce.userId,
       name: bodysauce.name,
@@ -93,13 +99,18 @@ exports.modifySauce = (req, res, next) => {
       mainPeppper: bodysauce.mainPeppper,
       imageUrl:  url + '/images/' + req.file.filename,
       heat: bodysauce.heat
-    })
+    })    
     .then(() => {
-      res.status(201).json({ message: 'Sauce updated successfully!' })})
+      res.status(201).json(
+        { message: 'Sauce updated successfully!' });
+    })
     .catch( (error) => {
-      res.status(400).json({ error: error });
+      res.status(400).json(
+        { error: error });
     });
-  }
+  })})
+}
+  
   if(typeof req.file === 'undefined'){
     Sauce.updateOne( {_id: req.params.id},{
       userId: req.body.userId,
@@ -110,9 +121,12 @@ exports.modifySauce = (req, res, next) => {
       heat: req.body.heat
     })
     .then(() => {
-      res.status(201).json({ message: 'Sauce updated successfully!' })})
+      res.status(201).json(
+        { message: 'Sauce updated successfully!' });
+      })
     .catch( (error) => {
-      res.status(400).json({ error: error });
+      res.status(400).json(
+        { error: error });
     });
   }
 };
@@ -180,8 +194,6 @@ exports.likesManager = (req, res, next) =>{
   })
 }
 
-
-
 function removeUserLiked(sauce, req) {
   for (i = 0; sauce.usersLiked.length > i; i++) {
     if (sauce.usersLiked[i] === req.body.userId) {
@@ -213,62 +225,4 @@ function isUserDisliked(sauce, req) {
   };
   return false
 }
-
-/* exports.likesManager = (req, res, next) =>{ 
-  Sauce.findOne({_id: req.params.id})
-  .then( (sauce) => {
-    if (!sauce) {
-      res.status(404).json({
-          error: new Error('Object Not found!')
-      });
-    };
-  
-    const token = req.headers.authorization.split(' ')[1];
-    const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');
-  
-    if (sauce.userId !== decodedToken.userId) {
-      res.status(401).json({
-        error: new Error('No autoritze request !')
-      });
-    };
-    if(req.body.like === 1){
-      for(i=0; sauce.usersLiked.length < 0; i++){
-        if(sauce.userId === req.body.userId){
-          console.log(i)
-          res.status(401).json({
-            error: new Error('Like previously added')
-          })
-        }
-      }
-      let sauceLikes = sauce.likes +1;
-      let sauceUserid = req.body.userId;
-      sauce.usersLiked.push(sauceUserid);
-      Sauce.updateOne({_id: req.params.id},{
-        likes: sauceLikes,
-        usersLiked: sauce.usersLiked
-      })
-      .then(() => {res.status(201).json({ message: 'Like Added successfully !' })})
-      .catch( (error) => {
-        res.status(400).json({ error: error });
-      });
-    };
-    if(req.body.like === 0){
-      let sauceLikes = sauce.likes -1;
-      Sauce.updateOne({_id: req.params.id},{
-        likes: sauceLikes
-      })
-      .then(() => {res.status(201).json({ message: 'Like Removed successfully !' })})
-      .catch( (error) => {
-        res.status(400).json({ error: error });
-      });
-    };
-    if(req.body.like === -1){
-      Sauce.updateOne((req.params.id),{
-        likes: sauce.likes + 1
-      
-      })
-    };
-
-  })
-};*/
 
