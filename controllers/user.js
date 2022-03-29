@@ -4,19 +4,24 @@ const user = require('../models/user');
 const User = require('../models/user');
 
 exports.singup = (req, res, next) => {
-  User.findOne({ email: req.body.email})
-  .then((user) => {
-    if(user){
-      return res.status(401).json({
-        error: new Error('User exist !!!!').message
-      })
-    }
-  })  
-  bcrypt.hash(req.body.password, 10)
-    .then((hash) => {
-      const user = newUser(req, hash);
-      saveUser(user, res);
-    })
+ 
+      if (!validateEmail(req.body.email)) {
+        console.log('Error: not valid email !!!');
+        return res.status(400).json({
+          error: new Error('Bad Request').message
+        })
+      }
+      bcrypt.hash(req.body.password, 10)
+        .then((hash) => {
+          const user = newUser(req, hash);
+          saveUser(user, res);
+        })
+        .catch(() =>{
+          console.log('Error: Hash not was created !!!');
+          res.status(500).json({
+            error: new Error('Internal Server Error').message
+          })
+       })
 }
 
 exports.login = (req, res, next) => {
@@ -73,15 +78,17 @@ function createToken(user) {
 function saveUser(user, res) {
   user.save()
     .then(() => {
+      console.log("User saved successfully !")
       res.status(201).json({
-        message: 'User added successfully!'
+        message: 'Created'
       });
     })
-    .catch(() => {
-      res.status(401).json({
-        error: new Error("User not added!!!").message
+    .catch(() => {      
+      console.log("Error: User not saved !!!")
+      res.status(500).json({
+        error: new Error("Internal Server Error").message
       });
-    });
+    });                                                 
 }
 
 function newUser(req, hash) {
@@ -90,3 +97,9 @@ function newUser(req, hash) {
     password: hash
   })
   }
+
+  function validateEmail(email){
+    return email.match(
+      /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    );
+  };
