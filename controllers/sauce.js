@@ -2,60 +2,40 @@ const Sauce = require('../models/sauce');
 const fileSystem = require('fs');
 
 exports.getSauces = (req, res, next) => {
-  Sauce.find().then(
-    (sauces) => {
-      res.status(200).json(sauces);
-    }
-  ).catch(
-    (error) => {
-      res.status(400).json({
-        error: error
+  Sauce.find()
+    .then(
+      (sauces) => {
+        console.log('Sauces found !')
+        res.status(200).json(sauces);
+      }
+    )
+    .catch(() => {
+      console.log('Error: Sauces not found');
+      res.status(404).json({
+        error: new Error('Not found').message
       });
     }
-  );
-};
+    );
+}
 exports.getSauce = (req, res, next) => {
   Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
+      console.log('Sauce found !')
       res.status(200).json(sauce);
     })
     .catch(() => {
+      console.log('Error: Sauce not found !!!')
       res.status(404).json({
-        error: new Error('Sauce Not Found !!!')
+        error: new Error('Not found').message
       });
     }
     );
 }
 exports.newSauce = (req, res, next) => {
-  const url = req.protocol + '://' + req.get('host');
 
-  const bodysauce = JSON.parse(req.body.sauce);
-
-  const sauce = new Sauce({
-    userId: bodysauce.userId,
-    name: bodysauce.name,
-    manufacturer: bodysauce.manufacturer,
-    description: bodysauce.description,
-    mainPeppper: bodysauce.mainPeppper,
-    imageUrl: url + '/images/' + req.file.filename,
-    heat: bodysauce.heat,
-    likes: 0,
-    dislikes: 0,
-    usersLiked: [],
-    usersDisiked: []
-  });
-  sauce.save().then(() => {
-    res.status(201).json({
-      message: 'Post saved successfully!'
-    });
-  })
-    .catch((error) => {
-      res.status(400).json({
-        error: error
-      })
-    }
-    );
-};
+  const sauce = newSauce(req, res);
+  saveSauce(sauce, res);
+}
 
 exports.deleteSauce = (req, res, next) => {
   Sauce.findOne({ _id: req.params.id })
@@ -63,8 +43,9 @@ exports.deleteSauce = (req, res, next) => {
       deleteSauce(sauce, req, res);
     })
     .catch(() => {
-      res.status(400).json({
-        error: new Error('Sauce not found !!!')
+      console.log('Error: Sauce not found !!!');
+      res.status(404).json({
+        error: new Error('Not found !!!').message
       })
     })
 }
@@ -84,8 +65,9 @@ exports.likesManager = (req, res, next) => {
       const like = req.body.like;
       const user = req.body.userId;
       if (isValidLike(like) && user == null) {
+        console.log('Error: Invalid parameters !!!')
         return res.status(400).json({
-          error: new Error('Invalid Parameters !!!!')
+          error: new Error('Bad request')
         })
       }
 
@@ -98,17 +80,57 @@ exports.likesManager = (req, res, next) => {
       isRemoveDislike(req, sauce, res);
     })
     .catch(() => {
-      res.status(400).json({
-        error: new Error()
+      console.log('Error: Sauce not found !!!');
+      res.status(404).json({
+        error: new Error('Not found !!!')
       })
     })
 }
 
-function isValidLike(like){
-  if (like != 1 || like != 0 || like != -1){
+function saveSauce(sauce, res) {
+  sauce.save().then(() => {
+    console.log('Sauce saved !')
+    res.status(201).json({
+      message: 'Created'
+    });
+  })
+    .catch(() => {
+      console.log('Error: Sauce not saved !!!')
+      res.status(500).json({
+        error: new Error('Internal server error')
+      });
+    })
+}
+
+function newSauce(req, res) {
+
+  const url = req.protocol + '://' + req.get('host');
+
+  const bodysauce = JSON.parse(req.body.sauce);
+
+  const sauce = new Sauce({
+    userId: bodysauce.userId,
+    name: bodysauce.name,
+    manufacturer: bodysauce.manufacturer,
+    description: bodysauce.description,
+    mainPeppper: bodysauce.mainPeppper,
+    imageUrl: url + '/images/' + req.file.filename,
+    heat: bodysauce.heat,
+    likes: 0,
+    dislikes: 0,
+    usersLiked: [],
+    usersDisiked: []
+  })
+
+  return sauce;
+}
+
+
+function isValidLike(like) {
+  if (like != 1 || like != 0 || like != -1) {
     return false;
   }
-  else{
+  else {
     return true;
   }
 }
@@ -128,17 +150,19 @@ function addDislike(sauce, req, res) {
     usersDisliked: sauce.usersDisliked
   })
     .then(() => {
-      res.status(200).json({
-        message: 'dislike Added successfully !'
+      console.log('Dislike Added successfully !');
+      res.status(204).json({
+        message: 'No content'
       });
     })
-    .catch(
-      () => {
-        res.status(400).json({
-          error: new Error('Disike not added !!!')
-        });
+    .catch(() => {
+      console.log('Error: Dislike not added !!!')
+      res.status(500).json({
+        error: new Error('Internal server error')
       });
+    })
 }
+
 
 function isRemoveDislike(req, sauce, res) {
   if (req.body.like === 0 && isUserDisliked(sauce, req)) {
@@ -158,16 +182,17 @@ function removeDislike(req, sauce, res) {
     usersDisliked: sauce.usersDisliked
   })
     .then(() => {
-      res.status(200).json({
-        message: 'Dislike Removed successfully !'
+      console.log('Dislike Removed successfully !');
+      res.status(204).json({
+        message: 'No content'
       });
     })
-    .catch(
-      () => {
-        res.status(400).json({
-          error: new Error('Disike not removed !!!')
-        });
+    .catch(() => {
+      console.log('Error: Disike not removed !!!')
+      res.status(500).json({
+        error: new Error('Internal server error')
       });
+    })
 }
 
 function isRemoveLike(req, sauce, res) {
@@ -187,16 +212,17 @@ function removeLike(req, sauce, res) {
     usersLiked: sauce.usersLiked
   })
     .then(() => {
+      console.log('Like Removed successfully !');
       res.status(204).json({
-        message: 'Like Removed successfully !'
+        message: 'No content'
       });
     })
-    .catch(
-      () => {
-        res.status(400).json({
-          error: new Error('Like not removed !!!')
-        });
+    .catch(() => {
+      console.log('Error: Like not removed !!!')
+      res.status(500).json({
+        error: new Error('Internal server error').message
       });
+    })
 }
 
 function isAddLike(req, sauce, res) {
@@ -214,18 +240,18 @@ function addLike(sauce, req, res) {
     usersLiked: sauce.usersLiked
   })
     .then(() => {
-      res.status(200).json({
-        message: 'Like Added successfully !'
+      console.log('Like added successfully !');
+      res.status(204).json({
+        message: 'No content'
       });
     })
-    .catch(
-      () => {
-        res.status(400).json({
-          error: new Error('Like not removed !!!')
-        });
+    .catch(() => {
+      console.log('Error: Like not added !!!')
+      res.status(500).json({
+        error: new Error('Internal server error').message
       });
+    })
 }
-
 function deleteSauce(sauce, req, res) {
   const filename = sauce.imageUrl.split('/images/')[1];
 
@@ -233,73 +259,92 @@ function deleteSauce(sauce, req, res) {
     sauce.deleteOne({ _id: req.params.id })
 
       .then(() => {
+        console.log('Post Deleted suscesfully !');
         res.status(200).json({
-          message: 'Post Deleted !'
+          message: 'Ok!'
         });
       })
       .catch(() => {
-        res.status(400).json({
-          error: new Error('Post not Deleted !!!')
-        });
-      });
-  });
+        console.log('Error: Image not deleted !!!')
+        res.status(500).json({
+          error: new Error('Internal server error').message
+        })
+      })
+  })
 }
+
 
 function isNotAnImage(req, res) {
   if (typeof req.file === 'undefined') {
-    Sauce.updateOne({ _id: req.params.id }, {
-      userId: req.body.userId,
-      name: req.body.name,
-      manufacturer: req.body.manufacturer,
-      description: req.body.description,
-      mainPeppper: req.body.mainPeppper,
-      heat: req.body.heat
-    })
-      .then(() => {
-        res.status(201).json(
-          { message: 'Sauce updated successfully!' });
-      })
-      .catch((error) => {
-        res.status(400).json(
-          { error: new Error('Post not Found !!!') });
-      });
+    updateSauce(req, res);
   }
 }
 
 function isAnImage(req, res) {
-
-  const url = req.protocol + '://' + req.get('host');
 
   if (typeof req.file !== 'undefined') {
     Sauce.findOne({ _id: req.params.id })
       .then((sauce) => {
         const filename = sauce.imageUrl.split('/images/')[1];
         fileSystem.unlink('images/' + filename, () => {
-          const bodysauce = JSON.parse(req.body.sauce);
-          Sauce.updateOne({ _id: req.params.id }, {
-            userId: bodysauce.userId,
-            name: bodysauce.name,
-            manufacturer: bodysauce.manufacturer,
-            description: bodysauce.description,
-            mainPeppper: bodysauce.mainPeppper,
-            imageUrl: url + '/images/' + req.file.filename,
-            heat: bodysauce.heat
-          })
-            .then(() => {
-              res.status(201).json(
-                { message: 'Sauce updated successfully!' });
-            })
-            .catch(() => {
-              res.status(400).json(
-                { error: new Error('Suce not found !!!') });
-            });
+          updateSauceImage(req, res);
         });
       })
       .catch(() => {
-        res.status(400).json(
-          { error: new Error('Post not Found !!!') });
-      });
+        console.log('Error: Image not deleted !!!')
+        res.status(500).json({
+          error: new Error('Internal server error').message
+        })
+      })
   }
+}
+
+function updateSauce(req, res) {
+  Sauce.updateOne({ _id: req.params.id }, {
+    userId: req.body.userId,
+    name: req.body.name,
+    manufacturer: req.body.manufacturer,
+    description: req.body.description,
+    mainPeppper: req.body.mainPeppper,
+    heat: req.body.heat
+  })
+    .then(() => {
+      console.log('Sauce updated successfully!');
+      res.status(200).json(
+        { message: 'Ok' })
+    })
+    .catch(() => {
+      console.log('Error: Post not found !!!')
+      res.status(404).json({
+        error: new Error('Not found').message
+      })
+    })
+}
+
+function updateSauceImage(req, res) {
+  const url = req.protocol + '://' + req.get('host');
+  const bodysauce = JSON.parse(req.body.sauce);
+
+  Sauce.updateOne({ _id: req.params.id }, {
+    userId: bodysauce.userId,
+    name: bodysauce.name,
+    manufacturer: bodysauce.manufacturer,
+    description: bodysauce.description,
+    mainPeppper: bodysauce.mainPeppper,
+    imageUrl: url + '/images/' + req.file.filename,
+    heat: bodysauce.heat
+  })
+    .then(() => {
+      console.log('Sauce updated successfully!');
+      res.status(200).json(
+        { message: 'Ok' })
+    })
+    .catch(() => {
+      console.log('Error: Post not found !!!')
+      res.status(404).json({
+        error: new Error('Not found').message
+      })
+    })
 }
 
 function removeUserLiked(sauce, req) {

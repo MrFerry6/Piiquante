@@ -17,7 +17,7 @@ module.exports = (req, res, next) => {
     }
   } 
   catch {     
-    console.log('Error: Invalid request !!!')
+    console.log('Error: Unauthorized request !!!')
     res.status(401).json({
       error: new Error('Unauthorized').message
     });
