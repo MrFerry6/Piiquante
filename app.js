@@ -4,12 +4,14 @@ const app = express();
 const bodyParser = require('body-parser');
 const userRoutes = require('./routes/user');
 const sauceRoutes = require('./routes/sauce');
+require('dotenv').config();
 
-mongoose.connect('mongodb+srv://TestUser:1234@cluster0.affna.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')//TODO-- encode password.
+mongoose.connect('mongodb+srv://'+process.env.DB_USER+':'+process.env.DB_PASS+'@cluster0.affna.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
   .then(() => {
     console.log('Successfully connected to MongoDB Atlas!');
   })
   .catch((error) => {
+    console.log(process.env.DB_USER, process.env.DB_PASS)
     console.log('Unable to connect to MongoDB Atlas!');
     console.error(error);
   });
